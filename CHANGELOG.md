@@ -2,6 +2,10 @@
 
 ## 0.1.1 — Installation guide and compatibility / 安装指南与兼容性
 
+- Remove the in-app update link; upgrades are manual through GitHub Releases.
+- Remove local folder paths from screenshot watcher error logging.
+- 移除应用内更新入口，改为手动下载；截图监听错误日志不再输出本机路径。
+
 - Explicit main-actor isolation fixes compilation on the macOS 14 CI toolchain.
 - Expanded bilingual requirements, source ZIP installation, troubleshooting, upgrade and removal instructions.
 - 明确主线程隔离标注，修复 macOS 14 CI 工具链编译错误。

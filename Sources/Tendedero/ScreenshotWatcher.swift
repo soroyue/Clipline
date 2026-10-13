@@ -88,7 +88,7 @@ final class ScreenshotWatcher {
             return
         }
         guard fd >= 0 else {
-            NSLog("Tendedero: cannot watch \(folder.path)")
+            log.error("Could not watch screenshot folder")
             return
         }
         let src = DispatchSource.makeFileSystemObjectSource(

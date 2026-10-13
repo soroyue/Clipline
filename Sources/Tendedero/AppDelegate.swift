@@ -806,22 +806,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
         menu.addItem(login)
 
-        // The app never connects to anything, so it cannot tell when a new
-        // version is out. The website can: it is opened with this version
-        // and language, and says whether there is a newer one.
-        menu.addItem(ClosureMenuItem(L("Check for Updates…")) {
-            NSWorkspace.shared.open(AppDelegate.updatesURL)
-        })
-
         menu.addItem(.separator())
         menu.addItem(ClosureMenuItem(L("Quit Tendedero").replacingOccurrences(of: "Tendedero", with: "Clipline"), key: "q") {
             NSApp.terminate(nil)
         })
-    }
-
-    /// Release information for this independent derivative.
-    private static var updatesURL: URL {
-        URL(string: "https://github.com/soroyue/Clipline/releases")!
     }
 
     private static func toggleLaunchAtLogin() {
