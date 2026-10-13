@@ -23,7 +23,51 @@ Clipline 是基于开源项目 [Tendedero](https://github.com/alejandrobujan/ten
                      最新
 ```
 
+## 系统运行环境
+
+| 项目 | 要求 |
+| --- | --- |
+| 操作系统 | macOS 14 Sonoma 或更高版本；不支持 Windows 和 Linux |
+| 芯片 | Apple Silicon 或 Intel，构建通用双架构应用 |
+| 源码编译 | Apple Swift 5.9+ 和 macOS 14+ SDK，由兼容的 Xcode 或 Command Line Tools 提供 |
+| 额外运行环境 | 不需要安装 Python、Node.js 或 Homebrew |
+| 发布形式 | 源码 ZIP；暂不提供经过公证、可直接安装的 DMG |
+| 已验证 | GitHub macOS 14 环境通过 12 项测试和双架构编译；本地 Apple Silicon 编译、安装通过 |
+
+Intel 已通过编译，但尚未完成 Intel 实机运行验证；更广泛的 UI 验收仍待完善。
+
 ## 编译与安装
+
+### 首次准备开发工具
+
+如果尚未安装，在“终端”执行：
+
+```bash
+xcode-select --install
+```
+
+按系统提示完成安装后再继续；已经安装则跳过。检查工具是否可用：
+
+```bash
+xcrun swift --version
+xcrun --sdk macosx --show-sdk-path
+```
+
+### 方式一：下载源码 ZIP（无需使用 Git）
+
+1. 打开 [最新发布页](https://github.com/soroyue/Clipline/releases/latest)，下载名为 `Clipline-…-source.zip` 的附件。
+2. 在 Finder 中解压。源码包不是应用，需要执行下一步编译。
+3. 打开“终端”，输入 `cd `（注意后面的空格），将解压后的 `Clipline` 文件夹拖进终端，按回车。
+4. 执行：
+
+```bash
+bash Install-and-Test-on-Mac.command
+```
+
+不需要使用 `sudo`。保持终端打开，直到看到 `Installed:`；耗时取决于电脑性能。
+
+### 方式二：使用 Git 下载
+
 
 需要 macOS 14 或更高版本，以及 Apple Swift 工具链（Xcode 或 Command Line Tools）。构建产物包含 Apple Silicon 和 Intel 架构。当前发布源码，暂不提供经过公证的安装包。
 
@@ -42,6 +86,17 @@ swift test
 swift scripts/check-strings.swift
 bash scripts/build-app.sh release
 ```
+
+## 常见问题、升级与卸载
+
+- **打开后没有窗口**：这是菜单栏应用。在 Finder 中打开 `~/Applications/Clipline.app`，然后查看顶部菜单栏图标。
+- **复制文字没有卡片**：先开启“悬挂复制的文字”，再复制新的非空文字；开启前的内容不会导入。
+- **缺少 Swift 或 SDK**：先完成 Command Line Tools 安装，再运行上面的检查命令。较新的 SDK 可能需要匹配的新工具链。
+- **请求文件夹权限**：仅允许访问你希望监听的截图文件夹，或另选一个文件夹。
+- **系统阻止下载的应用**：本项目尚未公证，建议自行编译公开源码；不要全局关闭 Gatekeeper。
+- **测试或编译失败**：安装会停止，日志在 `build/logs/`。提交 issue 前请遮挡个人路径，只提供必要的报错片段。
+- **升级**：下载新版源码后重新执行安装脚本；使用 Git 的用户可在无本地改动的仓库执行 `git pull --ff-only` 后重新安装。旧应用备份在 `build/backups/`，本地历史会保留。
+- **卸载**：先关闭“登录时启动”，退出 Clipline，再将 `~/Applications/Clipline.app` 移至废纸篓。这不会删除历史；只有确定不再需要时才单独清除历史数据。
 
 ## 使用方法
 

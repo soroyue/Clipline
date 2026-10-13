@@ -1,5 +1,12 @@
 # Changelog / 更新记录
 
+## 0.1.1 — Installation guide and compatibility / 安装指南与兼容性
+
+- Explicit main-actor isolation fixes compilation on the macOS 14 CI toolchain.
+- Expanded bilingual requirements, source ZIP installation, troubleshooting, upgrade and removal instructions.
+- 明确主线程隔离标注，修复 macOS 14 CI 工具链编译错误。
+- 补充中英文系统要求、源码安装、排错、升级及卸载说明。
+
 ## 0.1.0 — Initial public source release / 首次公开源码发布
 
 ### Added / 新增

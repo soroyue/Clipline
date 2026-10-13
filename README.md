@@ -23,7 +23,51 @@ older text ← 6 5 4 3 2 1  |  1 2 3 4 5 6 → older images
                         newest
 ```
 
+## Requirements
+
+| Item | Requirement |
+| --- | --- |
+| Operating system | macOS 14 Sonoma or newer; Windows and Linux are not supported |
+| Processor | Apple silicon or Intel; universal app build |
+| Source build | Apple Swift 5.9+ and a macOS 14+ SDK, supplied by a compatible Xcode or Command Line Tools installation |
+| Additional runtime | No Python, Node.js or Homebrew required |
+| Distribution | Source ZIP; no notarized, ready-to-install DMG currently provided |
+| Verified | 12 tests and universal build passed on GitHub's macOS 14 runner; local Apple silicon build/install also passed |
+
+Intel compilation has passed; Intel hardware runtime testing and broader UI testing remain outstanding.
+
 ## Build and install
+
+### First-time setup
+
+In Terminal, install Apple's development tools if needed:
+
+```bash
+xcode-select --install
+```
+
+Complete the system installer before continuing. If the tools are already installed, skip this step. Verify availability:
+
+```bash
+xcrun swift --version
+xcrun --sdk macosx --show-sdk-path
+```
+
+### Option A: download the source ZIP
+
+1. Open [Releases](https://github.com/soroyue/Clipline/releases/latest) and download the named `Clipline-…-source.zip` asset.
+2. Extract it in Finder. A source ZIP is not an application; it must be compiled.
+3. In Terminal, type `cd ` (including the space), drag the extracted `Clipline` folder into the window, and press Return.
+4. Run:
+
+```bash
+bash Install-and-Test-on-Mac.command
+```
+
+The installation needs no `sudo`. Keep the Terminal window open until it prints `Installed:`. Build time depends on your Mac.
+
+### Option B: clone with Git
+
 
 Requires macOS 14 or newer and Apple's Swift toolchain (Xcode or Command Line Tools). Universal builds target Apple silicon and Intel. This repository distributes source; it does not currently provide a notarized installer.
 
@@ -42,6 +86,17 @@ swift test
 swift scripts/check-strings.swift
 bash scripts/build-app.sh release
 ```
+
+## Troubleshooting and updates
+
+- **No window after launch:** this is a menu-bar app. Open `~/Applications/Clipline.app` in Finder and look for its menu-bar icon.
+- **No text cards:** enable **Hang copied text**, then copy fresh non-empty text. Content copied before enabling capture is skipped.
+- **Missing Swift or SDK:** finish installing Command Line Tools and rerun the verification commands above. A newer SDK may need a matching newer toolchain.
+- **Permission prompt for a watched folder:** grant access only to the folder you want Clipline to monitor, or choose another folder.
+- **macOS blocks a downloaded build:** this project does not provide notarization. Prefer building the published source yourself; do not disable Gatekeeper globally.
+- **Build/test fails:** installation stops. Logs are under `build/logs/`; review and redact personal paths before sharing relevant error lines in an issue.
+- **Update:** download a newer source release and rerun the installer, or run `git pull --ff-only` in a clean clone and rerun it. Existing Clipline is backed up in `build/backups/`; local history is retained.
+- **Uninstall:** turn off **Open at login**, quit Clipline, and move `~/Applications/Clipline.app` to Trash. This leaves local history in place; remove history separately only if you intend to erase it.
 
 ## Use
 
