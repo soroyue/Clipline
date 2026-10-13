@@ -24,6 +24,7 @@ struct GrabArea: NSViewRepresentable {
         configure(view)
     }
 
+    @MainActor
     private func configure(_ view: GrabView) {
         let id = item.id
         let line = line
