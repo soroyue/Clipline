@@ -15,6 +15,7 @@ if ! xcrun --find swift >/dev/null 2>&1; then
   echo "Install Apple Command Line Tools first: xcode-select --install" >&2
   exit 1
 fi
+source scripts/toolchain.sh
 mkdir -p build/logs
 STAMP="$(date +%Y%m%d-%H%M%S)"
 LOG="$(pwd)/build/logs/install-$STAMP.log"
@@ -22,7 +23,14 @@ exec > >(tee "$LOG") 2>&1
 echo "macOS: $(sw_vers -productVersion); architecture: $(uname -m)"
 xcrun swift --version
 echo "1/4 Run automated tests and translation checks"
-swift test
+if has_xctest; then
+  ensure_swiftui_compatible_sdk
+  swift test
+else
+  echo "Skipping the automated tests: this toolchain does not include XCTest." >&2
+  echo "Install the full Xcode, or set DEVELOPER_DIR to it, to run them." >&2
+  echo "CI runs them on every push: https://github.com/soroyue/Clipline/actions" >&2
+fi
 swift scripts/check-strings.swift
 echo "2/4 Build and verify the application"
 bash scripts/build-app.sh debug

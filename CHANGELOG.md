@@ -1,5 +1,14 @@
 # Changelog / 更新记录
 
+## Unreleased
+
+- Shared toolchain helpers in `scripts/toolchain.sh`, used by the build, test and install scripts.
+- Installers now build against the newest installed macOS 26 SDK when the default SDK's SwiftUI needs a macro plugin the toolchain lacks, so Command Line Tools on macOS 27 can build the app.
+- The test step is skipped with an actionable message instead of aborting the install when the toolchain has no XCTest; CI still runs the tests on every push.
+- 抽取公共工具链探测逻辑，供编译、测试与安装脚本共用。
+- 默认 SDK 的 SwiftUI 缺少宏插件时，自动改用已安装的最新版 macOS 26 SDK，macOS 27 上的 Command Line Tools 也能完成安装。
+- 工具链不含 XCTest 时给出明确提示并跳过测试，不再中断安装；CI 仍在每次推送时运行测试。
+
 ## 0.2.0 — History, pause and timing / 历史管理、暂停与交互设置
 
 - Unified All / Text / Images history, full-text and filename search.

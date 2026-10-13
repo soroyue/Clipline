@@ -91,6 +91,12 @@ bash Install-and-Test-on-Mac.command
 
 脚本会执行测试和翻译检查，构建并验证应用，备份已有 Clipline，然后安装到 `~/Applications/Clipline.app` 并打开。没有 Developer ID 时使用本地 ad hoc 签名，不修改系统安全设置。
 
+安装脚本会自动适配工具链的两个缺口：macOS 27 的 Command Line Tools 所用 SDK，其 SwiftUI 需要这些工具未附带的宏插件，因此脚本会改用已安装的最新版 macOS 26 SDK 编译；这些工具也不包含 XCTest，脚本会给出提示并跳过自动化测试，CI 仍会在每次推送时运行它们。如需在本地运行测试，请安装完整版 Xcode，或用 `DEVELOPER_DIR` 指向它：
+
+```bash
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer bash Install-and-Test-on-Mac.command
+```
+
 仅测试和构建：
 
 ```bash
@@ -104,6 +110,8 @@ bash scripts/build-app.sh release
 - **打开后没有窗口**：这是菜单栏应用。在 Finder 中打开 `~/Applications/Clipline.app`，然后查看顶部菜单栏图标。
 - **复制文字没有卡片**：先开启“悬挂复制的文字”，再复制新的非空文字；开启前的内容不会导入。
 - **缺少 Swift 或 SDK**：先完成 Command Line Tools 安装，再运行上面的检查命令。较新的 SDK 可能需要匹配的新工具链。
+- **安装时提示跳过测试**：当前工具链不含 XCTest，单独安装 Command Line Tools 时就是这种情况。编译和安装仍会继续，CI 每次推送都会运行测试。如需本地运行，请安装完整版 Xcode 或按上文设置 `DEVELOPER_DIR`。
+- **出现 `SwiftUIMacros.StateMacro could not be found`**：默认 SDK 的 SwiftUI 需要当前工具链没有的宏插件。安装脚本会自动改用最新版 macOS 26 SDK；在脚本之外手动执行 `swift test` 时，可能仍需把 `SDKROOT` 指向 macOS 26 SDK。
 - **请求文件夹权限**：仅允许访问你希望监听的截图文件夹，或另选一个文件夹。
 - **系统阻止下载的应用**：本项目尚未公证，建议自行编译公开源码；不要全局关闭 Gatekeeper。
 - **测试或编译失败**：安装会停止，日志在 `build/logs/`。提交 issue 前请遮挡个人路径，只提供必要的报错片段。

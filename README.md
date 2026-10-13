@@ -91,6 +91,12 @@ bash Install-and-Test-on-Mac.command
 
 The script runs tests and localization checks, builds and verifies the app, backs up an existing Clipline installation, installs to `~/Applications/Clipline.app`, and opens it. Without a Developer ID signing identity it uses ad hoc signing. It does not change system security settings.
 
+The installer adapts to two toolchain gaps on its own. Command Line Tools for macOS 27 use an SDK whose SwiftUI needs a macro plugin those tools do not ship, so it builds against the newest installed macOS 26 SDK instead. Those tools also omit XCTest, so the automated tests are skipped with a message and CI still runs them on every push. To run them locally, install the full Xcode or point `DEVELOPER_DIR` at it:
+
+```bash
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer bash Install-and-Test-on-Mac.command
+```
+
 To build without installing:
 
 ```bash
@@ -104,6 +110,8 @@ bash scripts/build-app.sh release
 - **No window after launch:** this is a menu-bar app. Open `~/Applications/Clipline.app` in Finder and look for its menu-bar icon.
 - **No text cards:** enable **Hang copied text**, then copy fresh non-empty text. Content copied before enabling capture is skipped.
 - **Missing Swift or SDK:** finish installing Command Line Tools and rerun the verification commands above. A newer SDK may need a matching newer toolchain.
+- **Tests are skipped during installation:** the active toolchain has no XCTest, which is the case for Command Line Tools on their own. The build and install still continue, and CI runs the tests on every push. To run them locally, install the full Xcode or set `DEVELOPER_DIR` to it as shown above.
+- **`SwiftUIMacros.StateMacro could not be found`:** the default SDK's SwiftUI needs a macro plugin this toolchain lacks. The installer switches to the newest installed macOS 26 SDK by itself; a manual `swift test` outside the scripts may still need `SDKROOT` set to a macOS 26 SDK.
 - **Permission prompt for a watched folder:** grant access only to the folder you want Clipline to monitor, or choose another folder.
 - **macOS blocks a downloaded build:** this project does not provide notarization. Prefer building the published source yourself; do not disable Gatekeeper globally.
 - **Build/test fails:** installation stops. Logs are under `build/logs/`; review and redact personal paths before sharing relevant error lines in an issue.

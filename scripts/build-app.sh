@@ -7,10 +7,14 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
   exit 1
 fi
 cd "$(dirname "$0")/.."
+source scripts/toolchain.sh
 
 CONFIG="${1:-release}"
 APP="build/Clipline.app"
 VERSION="0.2.0"
+# Pick a macOS 26 SDK up front when this toolchain cannot compile @State with
+# its default one; build_arch still falls back on a plain build failure.
+ensure_swiftui_compatible_sdk
 SWIFT_FLAGS=(-Xswiftc -debug-prefix-map -Xswiftc "$(pwd)=/Clipline")
 if swiftc -help | grep -q -- '-file-prefix-map'; then
   SWIFT_FLAGS+=(-Xswiftc -file-prefix-map -Xswiftc "$(pwd)=/Clipline")
