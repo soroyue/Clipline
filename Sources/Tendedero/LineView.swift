@@ -37,6 +37,16 @@ enum Layout {
         return ropeTop + 4 * sag(width: width) * f * (1 - f)
     }
 
+    static func singleX(index: Int, count: Int, width: CGFloat, visible: Int, scroll: CGFloat) -> CGFloat {
+        if Line.keepOnLine != nil && count > visible {
+            let newest = width / 2 + CGFloat(visible - 1) * spacing / 2
+            return newest - CGFloat(count - 1 - index) * spacing + scroll
+        }
+        let gaps = CGFloat(max(count - 1, 0))
+        let step = gaps > 0 ? min(spacing, max(0, width - 200) / gaps) : spacing
+        return width / 2 - gaps * step / 2 + CGFloat(index) * step
+    }
+
     /// Each lane starts at the centre, newest first and older cards outward.
     static func groupX(rank: Int, isText: Bool, width: CGFloat, scroll: CGFloat) -> CGFloat {
         let distance = cardWidth / 2 + 30 + CGFloat(rank) * spacing - scroll
@@ -54,7 +64,7 @@ struct LineView: View {
             ZStack(alignment: .topLeading) {
                 Rope(width: width)
 
-                if line.items.isEmpty {
+                if line.displayedItems.isEmpty {
                     Hint()
                         .position(x: width / 2, y: Layout.ropeY(x: width / 2, width: width) + 34)
                         .transition(.opacity)
@@ -62,7 +72,7 @@ struct LineView: View {
 
                 ForEach([true, false], id: \.self) { isText in
                     ZStack(alignment: .topLeading) {
-                        ForEach(line.items.filter { $0.isText == isText }) { item in
+                        ForEach(line.displayedItems.filter { $0.isText == isText }) { item in
                             let x = line.x(for: item, width: width)
                             let ropeY = Layout.ropeY(x: max(0, min(width, x)), width: width)
                             PeggedView(item: item, line: line)
@@ -73,9 +83,10 @@ struct LineView: View {
                     }
                     .frame(width: width, height: Layout.panelHeight)
                     .mask(alignment: isText ? .leading : .trailing) {
-                        Rectangle().frame(width: max(0, width / 2 - 12))
+                        Rectangle().frame(width: line.displayMode == .mixed ? max(0, width / 2 - 12) : width)
                     }
                 }
+                if line.displayMode == .mixed {
                 HStack(spacing: 8) {
                     Image(systemName: "text.alignleft").foregroundStyle(Color(red: 0.65, green: 0.56, blue: 0.42))
                     Rectangle().fill(.secondary.opacity(0.25)).frame(width: 1, height: 12)
@@ -84,6 +95,7 @@ struct LineView: View {
                 .font(.system(size: 10, weight: .medium))
                 .position(x: width / 2, y: Layout.ropeY(x: width / 2, width: width) + 30)
                 .allowsHitTesting(false)
+                }
 
             }
             .animation(.spring(response: 0.55, dampingFraction: 0.78), value: line.items.map(\.id))

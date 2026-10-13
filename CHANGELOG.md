@@ -1,5 +1,17 @@
 # Changelog / 更新记录
 
+## 0.2.0 — History, pause and timing / 历史管理、暂停与交互设置
+
+- Unified All / Text / Images history, full-text and filename search.
+- Persistent recording pause with menu-bar status and fresh-clipboard resume.
+- Adjustable reveal, hide, return and new-content preview timing, with reset.
+- Three display modes: original single-type layout or split text/image lanes.
+- Universal, locally signed DMG with upstream license and notice included; not notarized.
+- Redesigned original app icon in warm ivory and mist blue.
+- Fifteen automated tests, including pause/resume and timing bounds.
+- 统一历史分类与搜索；暂停记录与状态提示；交互时间设置及恢复默认；15 项测试。
+- Includes the unreleased 0.1.1 changes below. / 包含以下尚未单独发布的 0.1.1 改动。
+
 ## 0.1.1 — Installation guide and compatibility / 安装指南与兼容性
 
 - Remove the in-app update link; upgrades are manual through GitHub Releases.

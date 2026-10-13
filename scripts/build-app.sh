@@ -10,7 +10,11 @@ cd "$(dirname "$0")/.."
 
 CONFIG="${1:-release}"
 APP="build/Clipline.app"
-VERSION="0.1.1"
+VERSION="0.2.0"
+SWIFT_FLAGS=(-Xswiftc -debug-prefix-map -Xswiftc "$(pwd)=/Clipline")
+if swiftc -help | grep -q -- '-file-prefix-map'; then
+  SWIFT_FLAGS+=(-Xswiftc -file-prefix-map -Xswiftc "$(pwd)=/Clipline")
+fi
 
 # Builds one architecture and prints the binary's path.
 # The Command Line Tools for macOS 27 ship an SDK whose SwiftUI needs a macro
@@ -18,14 +22,14 @@ VERSION="0.1.1"
 # newest macOS 26 SDK installed alongside it.
 build_arch() {
   local triple="$1-apple-macosx14.0"
-  if [ -z "${SDKROOT:-}" ] && ! swift build -c "$CONFIG" --triple "$triple" >&2; then
+  if [ -z "${SDKROOT:-}" ] && ! swift build -c "$CONFIG" --triple "$triple" "${SWIFT_FLAGS[@]}" >&2; then
     FALLBACK="$(ls -d /Library/Developer/CommandLineTools/SDKs/MacOSX26*.sdk 2>/dev/null | sort -V | tail -1)"
     if [ -z "$FALLBACK" ]; then exit 1; fi
     echo "Retrying with $FALLBACK" >&2
     export SDKROOT="$FALLBACK"
   fi
-  if [ -n "${SDKROOT:-}" ]; then swift build -c "$CONFIG" --triple "$triple" >&2; fi
-  cp "$(swift build -c "$CONFIG" --triple "$triple" --show-bin-path)/Tendedero" "$OUT/Tendedero-$1"
+  if [ -n "${SDKROOT:-}" ]; then swift build -c "$CONFIG" --triple "$triple" "${SWIFT_FLAGS[@]}" >&2; fi
+  cp "$(swift build -c "$CONFIG" --triple "$triple" "${SWIFT_FLAGS[@]}" --show-bin-path)/Tendedero" "$OUT/Tendedero-$1"
 }
 
 # A universal binary, so it runs on Apple silicon and on Intel Macs, from
@@ -39,10 +43,12 @@ BIN="$OUT/Tendedero"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/Tendedero"
+if [ "$CONFIG" = "release" ]; then strip -S "$APP/Contents/MacOS/Tendedero"; fi
+cp LICENSE NOTICE "$APP/Contents/Resources/"
 
 # Icon
 WORK="$(mktemp -d)"
-swift scripts/make-clipline-icon.swift "$WORK/icon.png"
+sips -z 1024 1024 assets/Clipline.png --out "$WORK/icon.png" >/dev/null
 ICONSET="$WORK/Clipline.iconset"
 mkdir -p "$ICONSET"
 for s in 16 32 128 256 512; do
@@ -72,7 +78,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleIconFile</key><string>Clipline</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>${VERSION}</string>
-  <key>CFBundleVersion</key><string>7</string>
+  <key>CFBundleVersion</key><string>8</string>
   <key>CFBundleDevelopmentRegion</key><string>en</string>
   <key>CFBundleLocalizations</key><array>${LANGUAGES}</array>
   <key>LSMinimumSystemVersion</key><string>14.0</string>

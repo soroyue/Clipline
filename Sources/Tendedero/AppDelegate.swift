@@ -32,6 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var isRevealed = false
     /// Opened on purpose with the shortcut or the menu: it stays down until
     /// the cursor has visited it and left, or the shortcut is pressed again.
+    private let interactionSettings = InteractionSettings()
     private var pinned = false
     /// A new screenshot shows itself for a moment, then tucks away.
     private var peekUntil = Date.distantPast
@@ -289,7 +290,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         updateCapacity()
         wanted = true
         refresh()
-        if Self.peeksAtNew { reveal(peekFor: 2.5) }
+        if Self.peeksAtNew { reveal(peekFor: InteractionTiming.peek) }
     }
 
     // MARK: The capture flying to the line
@@ -297,6 +298,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// A new screenshot lifts off from where it was taken and flies to its
     /// place on the line. Without a known capture area it simply drops in.
     private func hangCapture(_ url: URL) {
+        guard !ClipboardWatcher.isPaused else { return }
         let from = captureRect(of: url)
         let screen = from.flatMap { from in
             NSScreen.screens.first { NSMouseInRect(CGPoint(x: from.midX, y: from.midY), $0.frame, false) }
@@ -348,7 +350,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// Where a card will hang, in screen coordinates, using the same layout
     /// as the line view.
     private func cardFrame(for id: UUID) -> CGRect? {
-        guard let index = line.items.firstIndex(where: { $0.id == id }) else { return nil }
+        guard line.displayedItems.contains(where: { $0.id == id }),
+              let index = line.items.firstIndex(where: { $0.id == id }) else { return nil }
         let width = panel.frame.width
         let x = line.x(for: line.items[index], width: width)
         let viewTop = Layout.ropeY(x: x, width: width) - Layout.pinAbove
@@ -461,7 +464,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// How long the cursor rests against the top edge before the line comes
     /// down. Short enough to feel instant, long enough that a quick trip to
     /// the menu bar does not trigger it.
-    private static let revealDelay: TimeInterval = 0.5
+    private static var revealDelay: TimeInterval { InteractionTiming.reveal }
 
     /// The menu bar strip at the top of a screen. With an auto-hiding menu
     /// bar the visible frame reaches the top, so the system thickness is used.
@@ -494,7 +497,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
     /// How long the cursor is away before the line tucks back up.
-    private static let retractDelay: TimeInterval = 0.98
+    private static var retractDelay: TimeInterval { InteractionTiming.hideDelay }
     private var departureWasBrowsing = false
 
     private func tick() {
@@ -546,7 +549,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let since = awaySince ?? now
             awaySince = since
             if now.timeIntervalSince(since) >= 0.7 && line.isBrowsing { line.returnToLatest() }
-            let delay = departureWasBrowsing ? 2.5 : Self.retractDelay
+            let delay = departureWasBrowsing ? InteractionTiming.browseHideDelay : Self.retractDelay
             if now.timeIntervalSince(since) >= delay {
                 awaySince = nil
                 setRevealed(false)
@@ -561,14 +564,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         guard !GrabView.isDragging else { return }
         let local = panel.convertPoint(fromScreen: mouse)
         let flipped = CGPoint(x: local.x, y: panel.frame.height - local.y)
-        var overPhoto = line.items.contains { item in
-            guard (flipped.x < panel.frame.width / 2) == item.isText,
+        var overPhoto = line.displayedItems.contains { item in
+            guard (line.displayMode != .mixed || (flipped.x < panel.frame.width / 2) == item.isText),
                   let rect = line.hitRects[item.id] else { return false }
             return rect.insetBy(dx: -4, dy: -4).contains(flipped)
         }
         // A line longer than the screen also takes the band the photos hang
         // in, gaps included, so a swipe anywhere along it moves it.
-        if !overPhoto, !line.items.isEmpty {
+        if !overPhoto, !line.displayedItems.isEmpty {
             let band = line.hitRects.values.reduce(CGRect.null) { $0.union($1) }
             overPhoto = !band.isNull && flipped.y >= band.minY - 4 && flipped.y <= band.maxY + 4
         }
@@ -643,9 +646,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// The shirt fills in while copied images are hung, so it shows at a
     /// glance that the clipboard is being watched.
     private func updateStatusIcon() {
-        let on = ClipboardWatcher.isWatching
-        let description = on ? L("Clipline, clipboard history on") : "Clipline"
-        let image = NSImage(systemSymbolName: on ? "square.stack.fill" : "square.stack", accessibilityDescription: description)
+        let on = ClipboardWatcher.isWatching && !ClipboardWatcher.isPaused
+        let description = ClipboardWatcher.isPaused ? L("Clipline, recording paused") : on ? L("Clipline, clipboard history on") : "Clipline"
+        let image = NSImage(systemSymbolName: ClipboardWatcher.isPaused ? "pause.circle" : on ? "square.stack.fill" : "square.stack", accessibilityDescription: description)
         image?.isTemplate = true
         statusItem.button?.image = image
         statusItem.button?.toolTip = description
@@ -662,6 +665,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             toggleItem.keyEquivalentModifierMask = shortcut.modifiers
         }
         menu.addItem(toggleItem)
+
+        let modeMenu = NSMenu()
+        for (mode, title) in [(Line.DisplayMode.images, L("Images only")), (.text, L("Text only")), (.mixed, L("Text + images (grouped)"))] {
+            let item = ClosureMenuItem(title) { [weak self] in
+                guard let self else { return }
+                TextPreview.shared.close()
+                self.line.displayMode = mode
+                // Modes determine what is shown, without erasing history or
+                // silently changing the user's independent capture switches.
+                self.comeDown(on: nil)
+            }
+            item.state = line.displayMode == mode ? .on : .off
+            modeMenu.addItem(item)
+        }
+        let modeItem = NSMenuItem(title: L("Display mode"), action: nil, keyEquivalent: "")
+        modeItem.submenu = modeMenu
+        menu.addItem(modeItem)
+
+        let pauseItem = ClosureMenuItem(ClipboardWatcher.isPaused ? L("Resume recording") : L("Pause recording")) { [weak self] in
+            guard let self else { return }
+            self.clipboardWatcher.stop()
+            ClipboardWatcher.isPaused.toggle()
+            if ClipboardWatcher.isWatching { self.clipboardWatcher.start() }
+            self.updateStatusIcon()
+        }
+        pauseItem.state = ClipboardWatcher.isPaused ? .on : .off
+        pauseItem.toolTip = L("Pauses new clipboard and screenshot cards. System screenshots are still saved normally.")
+        menu.addItem(pauseItem)
+        menu.addItem(ClosureMenuItem(L("Interaction settings…")) { [weak self] in
+            self?.interactionSettings.show()
+        })
 
         let clearItem = ClosureMenuItem(L("Take everything down")) { [weak self] in
             self?.line.clear()
@@ -688,7 +722,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         textClipboard.state = ClipboardWatcher.textEnabled ? .on : .off
         textClipboard.toolTip = L("Text stays on this Mac. Hover to read, click to copy.")
         menu.addItem(textClipboard)
-        menu.addItem(ClosureMenuItem(L("Search text history…")) { [weak self] in
+        menu.addItem(ClosureMenuItem(L("Browse history…")) { [weak self] in
             guard let self else { return }
             TextPreview.shared.close()
             self.textHistory.show(line: self.line)

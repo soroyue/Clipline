@@ -47,6 +47,66 @@ final class TextClipboardTests: XCTestCase {
         XCTAssertEqual(line.textScroll, 80)
     }
 
+    @MainActor func testSingleModeLayoutKeepsHistory() async throws {
+        let suite = "Clipline-mode-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let line = Line(defaults: defaults, textFolder: folder)
+        let previousMode = line.displayMode
+        defer {
+            line.displayMode = previousMode
+            defaults.removePersistentDomain(forName: suite)
+            try? FileManager.default.removeItem(at: folder)
+        }
+        line.hangText("first mode sample")
+        line.hangText("second mode sample")
+        line.displayMode = .text
+        XCTAssertEqual(line.displayedItems.count, 2)
+        XCTAssertLessThan(line.x(for: line.items[0], width: 1200), line.x(for: line.items[1], width: 1200))
+        XCTAssertEqual((line.x(for: line.items[0], width: 1200) + line.x(for: line.items[1], width: 1200)) / 2, 600)
+        line.displayMode = .images
+        XCTAssertTrue(line.displayedItems.isEmpty)
+        XCTAssertEqual(line.items.count, 2)
+        line.displayMode = .mixed
+        XCTAssertEqual(line.displayedItems.count, 2)
+        XCTAssertLessThan(line.x(for: line.items[1], width: 1200), 600)
+    }
+
+    func testInteractionTimingBoundsAndDefaults() {
+        let name = "Clipline-timing-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: name)!
+        defer { defaults.removePersistentDomain(forName: name) }
+        XCTAssertEqual(InteractionTiming.value("delay", fallback: 1.2, range: 0.4...4, defaults: defaults), 1.2)
+        defaults.set(-10, forKey: "delay")
+        XCTAssertEqual(InteractionTiming.value("delay", fallback: 1.2, range: 0.4...4, defaults: defaults), 0.4)
+        defaults.set(99, forKey: "delay")
+        XCTAssertEqual(InteractionTiming.value("delay", fallback: 1.2, range: 0.4...4, defaults: defaults), 4)
+    }
+
+    @MainActor func testPauseResumeSkipsPausedClipboard() async {
+        let previous = ClipboardWatcher.isPaused
+        let enabled = ClipboardWatcher.textEnabled
+        defer { ClipboardWatcher.isPaused = previous; ClipboardWatcher.textEnabled = enabled }
+        ClipboardWatcher.textEnabled = true
+        let pb = NSPasteboard(name: .init("Clipline-pause-\(UUID().uuidString)"))
+        defer { pb.releaseGlobally() }
+        var captured: [String] = []
+        let watcher = ClipboardWatcher(pasteboard: pb, onImage: { _ in XCTFail("Unexpected image") }, onText: { captured.append($0) })
+        ClipboardWatcher.isPaused = true
+        pb.clearContents(); pb.setString("paused synthetic text", forType: .string)
+        watcher.check()
+        XCTAssertTrue(captured.isEmpty)
+        // Resuming restarts monitoring and skips the current clipboard.
+        ClipboardWatcher.isPaused = false
+        watcher.start()
+        defer { watcher.stop() }
+        watcher.check()
+        XCTAssertTrue(captured.isEmpty)
+        pb.clearContents(); pb.setString("fresh synthetic text", forType: .string)
+        watcher.check()
+        XCTAssertEqual(captured, ["fresh synthetic text"])
+    }
+
     func testFirstParagraphAndUnicodeSummary() {
         XCTAssertEqual(TextClips.summary("\r\n  城市更新\r\n实施方案\r\n\r\n第二段"), "城市更新 实施方案")
         XCTAssertEqual(TextClips.summary("👨‍👩‍👧‍👦你好世界", limit: 3), "👨‍👩‍👧‍👦你好…")

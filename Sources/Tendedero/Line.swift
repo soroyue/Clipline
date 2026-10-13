@@ -48,19 +48,33 @@ final class Line: ObservableObject {
     var visibleCount = 8
     /// How far the line is scrolled towards older photos, in points; 0 shows
     /// the newest.
+    enum DisplayMode: String, CaseIterable { case mixed, text, images }
+    @Published var displayMode = DisplayMode(rawValue: UserDefaults.standard.string(forKey: "displayMode") ?? "") ?? .mixed {
+        didSet { UserDefaults.standard.set(displayMode.rawValue, forKey: "displayMode"); resetScroll() }
+    }
+    var displayedItems: [Pegged] {
+        items.filter { displayMode == .mixed || (displayMode == .text ? $0.isText : !$0.isText) }
+    }
+    @Published var singleScroll: CGFloat = 0
     @Published var textScroll: CGFloat = 0
     @Published var imageScroll: CGFloat = 0
-    var isBrowsing: Bool { textScroll != 0 || imageScroll != 0 }
+    var isBrowsing: Bool { displayMode == .mixed && (textScroll != 0 || imageScroll != 0) }
 
-    func resetScroll() { textScroll = 0; imageScroll = 0 }
+    func resetScroll() { textScroll = 0; imageScroll = 0; singleScroll = 0 }
 
     func returnToLatest() {
-        withAnimation(.easeInOut(duration: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? 0 : 1.4)) {
+        withAnimation(.easeInOut(duration: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? 0 : InteractionTiming.returnDuration)) {
             resetScroll()
         }
     }
 
     func x(for item: Pegged, width: CGFloat) -> CGFloat {
+        if displayMode != .mixed {
+            let shown = displayedItems
+            let index = shown.firstIndex(where: { $0.id == item.id }) ?? 0
+            return Layout.singleX(index: index, count: shown.count, width: width,
+                                  visible: visibleCount, scroll: singleScroll)
+        }
         let group = items.filter { $0.isText == item.isText }
         let rank = group.reversed().firstIndex(where: { $0.id == item.id }) ?? 0
         return Layout.groupX(rank: rank, isText: item.isText, width: width,
@@ -166,7 +180,9 @@ final class Line: ObservableObject {
 
     /// The photos hung before (left) or after (right) this one.
     func neighbours(of id: UUID, toTheLeft: Bool) -> [Pegged] {
-        let live = items.filter { !$0.falling && $0.isText } + items.filter { !$0.falling && !$0.isText }.reversed()
+        let live = displayMode == .mixed
+            ? items.filter { !$0.falling && $0.isText } + items.filter { !$0.falling && !$0.isText }.reversed()
+            : displayedItems.filter { !$0.falling }
         guard let i = live.firstIndex(where: { $0.id == id }) else { return [] }
         return toTheLeft ? Array(live[..<i]) : Array(live[(i + 1)...])
     }
@@ -284,6 +300,11 @@ final class Line: ObservableObject {
     /// of that folder. If the Trash refuses it, it still leaves the line.
     /// Moves along a line that holds more than fit, from a scroll gesture.
     func scroll(by delta: CGFloat, isText: Bool) {
+        if displayMode != .mixed {
+            let most = CGFloat(max(0, displayedItems.count - visibleCount)) * Layout.spacing
+            singleScroll = min(most, max(0, singleScroll + delta))
+            return
+        }
         let count = items.filter { !$0.falling && $0.isText == isText }.count
         let most = CGFloat(max(0, count - 1)) * Layout.spacing
         if isText { textScroll = min(most, max(0, textScroll + delta)) }

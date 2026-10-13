@@ -2,7 +2,6 @@
 
 /* AppDelegate */
 "Let Tendedero handle your screenshots?" = "让 Tendedero 接管你的截图？";
-"Screenshots will hang on the line the instant you take them, without the floating thumbnail, and will not pile up on your Desktop. Drag one to a folder to keep it, or discard it with the cross. You can turn this off from the menu bar, and your settings come back when Tendedero quits." = "你截图的那一瞬间，图片就会挂到晾衣绳上——没有浮动缩略图，也不会堆到桌面上。拖进文件夹即保留，点叉即丢弃。随时可以从菜单栏关掉，退出 Tendedero 后你的设置会自动还原。";
 "Turn on" = "开启";
 "Not now" = "以后再说";
 "Hide line" = "隐藏晾衣绳";
@@ -68,9 +67,30 @@
 "Text" = "文字";
 "characters" = "个字符";
 "Text preview" = "文字预览";
-"Text history" = "文字历史";
-"Search text history" = "搜索文字历史";
-"Search text history…" = "搜索文字历史…";
 "Delete" = "删除";
-"Select a text card to read it" = "选择一条文字记录查看全文";
 "Clipline, clipboard history on" = "Clipline，剪贴板历史已开启";
+"All" = "全部";
+"Browse history…" = "浏览历史…";
+"Clipboard history" = "剪贴板历史";
+"Clipline, recording paused" = "Clipline，记录已暂停";
+"Content type" = "内容类型";
+"Hide after leaving (including animation)" = "离开多久完全收起（含动画）";
+"Images" = "图片";
+"Interaction settings" = "交互设置";
+"Interaction settings…" = "交互设置…";
+"New-content preview hold" = "新内容自动展示停留时间";
+"Pause recording" = "暂停记录";
+"Pauses new clipboard and screenshot cards. System screenshots are still saved normally." = "暂停添加剪贴板和截图卡片，系统仍会正常保存截图。";
+"Reading a preview keeps the line open. Browsing returns to the latest items before hiding." = "阅读全文时保持展开；滚动浏览后会先归中，再收起。";
+"Restore defaults" = "恢复默认设置";
+"Resume recording" = "恢复记录";
+"Return animation after browsing" = "浏览后的归中动画时长";
+"Search text or image filenames" = "搜索文字或图片文件名";
+"Select an item to preview it" = "选择一条记录进行预览";
+"Thumbnail preview. Open to view the original." = "此处为缩略图，点击“打开”查看原图。";
+"Top-edge dwell" = "顶部停留多久展开";
+"Display mode" = "显示模式";
+"Images only" = "纯图片";
+"Text + images (grouped)" = "文字＋图片（左右分组）";
+"Text only" = "纯文字";
+"Screenshots will hang on the line the instant you take them, without the floating thumbnail, and will not pile up on your Desktop. Drag one to a folder to keep it, or discard it with the cross. You can turn this off from the menu bar, and your settings come back when Tendedero quits." = "你截图的那一瞬间，图片就会挂到晾衣绳上——没有浮动缩略图，也不会堆到桌面上。拖进文件夹即保留，点叉即丢弃。随时可以从菜单栏关掉，退出 Tendedero 后你的设置会自动还原。";

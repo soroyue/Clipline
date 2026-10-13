@@ -2,7 +2,6 @@
 
 /* AppDelegate */
 "Let Tendedero handle your screenshots?" = "Laisser Tendedero gérer vos captures d’écran ?";
-"Screenshots will hang on the line the instant you take them, without the floating thumbnail, and will not pile up on your Desktop. Drag one to a folder to keep it, or discard it with the cross. You can turn this off from the menu bar, and your settings come back when Tendedero quits." = "Les captures s’accrocheront à la corde dès que vous les prendrez, sans la vignette flottante, et ne s’entasseront plus sur votre bureau. Faites-en glisser une dans un dossier pour la garder, ou jetez-la avec la croix. Vous pouvez désactiver cette option depuis la barre des menus, et vos réglages reviennent quand vous quittez Tendedero.";
 "Turn on" = "Activer";
 "Not now" = "Plus tard";
 "Hide line" = "Masquer la corde";
@@ -68,9 +67,30 @@
 "Text" = "Text";
 "characters" = "characters";
 "Text preview" = "Text preview";
-"Text history" = "Text history";
-"Search text history" = "Search text history";
-"Search text history…" = "Search text history…";
 "Delete" = "Delete";
-"Select a text card to read it" = "Select a text card to read it";
 "Clipline, clipboard history on" = "Clipline, clipboard history on";
+"All" = "All";
+"Browse history…" = "Browse history…";
+"Clipboard history" = "Clipboard history";
+"Clipline, recording paused" = "Clipline, recording paused";
+"Content type" = "Content type";
+"Hide after leaving (including animation)" = "Hide after leaving (including animation)";
+"Images" = "Images";
+"Interaction settings" = "Interaction settings";
+"Interaction settings…" = "Interaction settings…";
+"New-content preview hold" = "New-content preview hold";
+"Pause recording" = "Pause recording";
+"Pauses new clipboard and screenshot cards. System screenshots are still saved normally." = "Pauses new clipboard and screenshot cards. System screenshots are still saved normally.";
+"Reading a preview keeps the line open. Browsing returns to the latest items before hiding." = "Reading a preview keeps the line open. Browsing returns to the latest items before hiding.";
+"Restore defaults" = "Restore defaults";
+"Resume recording" = "Resume recording";
+"Return animation after browsing" = "Return animation after browsing";
+"Search text or image filenames" = "Search text or image filenames";
+"Select an item to preview it" = "Select an item to preview it";
+"Thumbnail preview. Open to view the original." = "Thumbnail preview. Open to view the original.";
+"Top-edge dwell" = "Top-edge dwell";
+"Display mode" = "Display mode";
+"Images only" = "Images only";
+"Text + images (grouped)" = "Text + images (grouped)";
+"Text only" = "Text only";
+"Screenshots will hang on the line the instant you take them, without the floating thumbnail, and will not pile up on your Desktop. Drag one to a folder to keep it, or discard it with the cross. You can turn this off from the menu bar, and your settings come back when Tendedero quits." = "Les captures s’accrocheront à la corde dès que vous les prendrez, sans la vignette flottante, et ne s’entasseront plus sur votre bureau. Faites-en glisser une dans un dossier pour la garder, ou jetez-la avec la croix. Vous pouvez désactiver cette option depuis la barre des menus, et vos réglages reviennent quand vous quittez Tendedero.";

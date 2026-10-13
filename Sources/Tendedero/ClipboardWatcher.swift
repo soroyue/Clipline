@@ -30,6 +30,11 @@ final class ClipboardWatcher {
         set { UserDefaults.standard.set(newValue, forKey: "textClipboardEnabled") }
     }
 
+    static var isPaused: Bool {
+        get { UserDefaults.standard.bool(forKey: "recordingPaused") }
+        set { UserDefaults.standard.set(newValue, forKey: "recordingPaused") }
+    }
+
     static var isWatching: Bool { isEnabled || textEnabled }
 
     private static let privateTypes: Set<NSPasteboard.PasteboardType> = [
@@ -84,7 +89,7 @@ final class ClipboardWatcher {
         let count = pb.changeCount
         guard count != lastCount else { return }
         lastCount = count
-        guard Self.isWatching, let items = pb.pasteboardItems, !items.isEmpty,
+        guard !Self.isPaused, Self.isWatching, let items = pb.pasteboardItems, !items.isEmpty,
               items.allSatisfy({ Self.privateTypes.isDisjoint(with: $0.types) }) else { return }
         // Prefer text when an app also supplies a rendered image. Finder file
         // copies are not text history. Never trim the stored original text.
@@ -106,7 +111,7 @@ final class ClipboardWatcher {
             let png = ClipboardWatcher.png(from: data, type: type)
             DispatchQueue.main.async {
                 // Copied over again in the meantime: that copy is the one that counts.
-                guard let self, Self.isEnabled, self.timer != nil, let png, self.pasteboard.changeCount == count else { return }
+                guard let self, !Self.isPaused, Self.isEnabled, self.timer != nil, let png, self.pasteboard.changeCount == count else { return }
                 self.save(png)
             }
         }

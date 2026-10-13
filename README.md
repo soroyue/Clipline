@@ -1,5 +1,7 @@
 # Clipline
 
+<img src="assets/Clipline.png" width="128" alt="Clipline icon">
+
 **Text and images, hanging side by side on your Mac.**
 
 [简体中文](README.zh-CN.md) · [Changes](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [License](LICENSE)
@@ -31,10 +33,20 @@ older text ← 6 5 4 3 2 1  |  1 2 3 4 5 6 → older images
 | Processor | Apple silicon or Intel; universal app build |
 | Source build | Apple Swift 5.9+ and a macOS 14+ SDK, supplied by a compatible Xcode or Command Line Tools installation |
 | Additional runtime | No Python, Node.js or Homebrew required |
-| Distribution | Source ZIP; no notarized, ready-to-install DMG currently provided |
-| Verified | 12 tests and universal build passed on GitHub's macOS 14 runner; local Apple silicon build/install also passed |
+| Distribution | Source ZIP and a locally signed universal DMG; not Apple-notarized |
+| Verified | 15 tests and universal build passed on GitHub's macOS 14 runner; local Apple silicon build/install also passed |
 
 Intel compilation has passed; Intel hardware runtime testing and broader UI testing remain outstanding.
+
+## Install from DMG
+
+1. Download `Clipline-0.2.0.dmg` from [Releases](https://github.com/soroyue/Clipline/releases/latest).
+2. Quit any running Clipline before replacing it. Open the DMG and drag Clipline to Applications.
+3. Eject the disk image, then open Clipline from Applications and enable the desired capture switches in its menu.
+
+The DMG does not require developer tools to run. It is ad hoc signed, not Developer ID signed or Apple-notarized, so macOS may block first launch. Do not disable system security protections; build from source if your policy does not permit this distribution. Users of the source installer should keep one installation location (it uses `~/Applications`) to avoid duplicate copies.
+
+To make a DMG from source: `bash scripts/make-dmg.sh`. The volume includes the app, Applications shortcut, LICENSE and NOTICE.
 
 ## Build and install
 
@@ -69,7 +81,7 @@ The installation needs no `sudo`. Keep the Terminal window open until it prints 
 ### Option B: clone with Git
 
 
-Requires macOS 14 or newer and Apple's Swift toolchain (Xcode or Command Line Tools). Universal builds target Apple silicon and Intel. This repository distributes source; it does not currently provide a notarized installer.
+Requires macOS 14 or newer and Apple's Swift toolchain (Xcode or Command Line Tools). Universal builds target Apple silicon and Intel. Source and a locally signed DMG are available. The DMG is not Apple-notarized.
 
 ```bash
 git clone https://github.com/soroyue/Clipline.git
@@ -98,13 +110,23 @@ bash scripts/build-app.sh release
 - **Update:** download a newer source release and rerun the installer, or run `git pull --ff-only` in a clean clone and rerun it. Existing Clipline is backed up in `build/backups/`; local history is retained.
 - **Uninstall:** turn off **Open at login**, quit Clipline, and move `~/Applications/Clipline.app` to Trash. This leaves local history in place; remove history separately only if you intend to erase it.
 
+## Display modes
+
+Choose **Display mode** in the menu: **Images only**, **Text only**, or **Text + images (grouped)**. Single-type modes use the original centred clothesline and scrolling layout, without the split-lane return animation. Grouped mode uses our left-text/right-image layout. Switching modes preserves all history; capture switches remain independent so you can choose what to record separately from what to display.
+
+## New in 0.2.0
+
+- **Browse history…** groups all retained cards into All / Text / Images. Search text contents or image filenames, copy records, open original images, or remove individual cards. Image search does not perform OCR.
+- **Pause recording / Resume recording** pauses new clipboard and screenshot cards without deleting history. A pause icon indicates the state, which persists across restarts. System screenshots are still saved to their configured folder; pause is not a system screenshot blocker. Resuming skips the current clipboard.
+- **Interaction settings…** adjusts top-edge dwell, ordinary hide time (including animation), return animation and new-content preview hold. Changes persist immediately; Restore defaults returns to 0.5 / 1.2 / 1.4 / 2.5 seconds. The browse-return pause is 0.7 seconds; hiding waits for the return animation to finish.
+
 ## Use
 
 1. Open Clipline from Applications. It lives in the menu bar, without a conventional main window.
 2. Enable **Hang copied text** and/or **Hang copied images** in its menu. Enable screenshot handling separately if desired.
 3. Copy new content. Existing clipboard content is not imported when monitoring starts.
 4. Rest the pointer in the menu bar for about 0.5 seconds to reveal the line. Browse text on the left and images on the right.
-5. Hover over a text card for its full preview, click to copy, or use **Search text history…**.
+5. Hover over a text card for its full preview, click to copy, or use **Browse history…**.
 
 Ordinary pointer departure starts hiding after approximately 0.98 seconds, followed by a 0.22-second animation. After scrolling history, departure allows a 0.7-second pause and a 1.4-second return animation before hiding at about 2.5 seconds. Reading a preview or interacting with a card keeps the line visible. New-content peeks use a separate 2.5-second hold. Timing is approximate.
 
@@ -120,7 +142,7 @@ The published source archive excludes clipboard history, screenshots, local logs
 
 ## Verification and limitations
 
-Twelve automated tests cover text fidelity, persistence and permissions, deduplication, copying, deletion, capacity, filtering, image capture and split-lane scrolling. Local macOS tests and universal builds have passed. GitHub Actions runs the checks on pushes and pull requests.
+Fifteen automated tests cover text fidelity, persistence and permissions, deduplication, copying, deletion, capacity, filtering, image capture and split-lane scrolling. Local macOS tests and universal builds have passed. GitHub Actions runs the checks on pushes and pull requests.
 
 Visual behavior, multi-monitor positioning, full-screen behavior and gesture feel still need broader manual testing. A passing test suite is not a claim of complete UI acceptance. Intel is a build target; runtime validation on Intel hardware has not been performed.
 

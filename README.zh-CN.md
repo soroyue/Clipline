@@ -1,5 +1,7 @@
 # Clipline
 
+<img src="assets/Clipline.png" width="128" alt="Clipline 图标">
+
 **让文字与图片一起，挂在 Mac 屏幕顶部。**
 
 [English](README.md) · [更新记录](CHANGELOG.md) · [参与贡献](CONTRIBUTING.md) · [许可证](LICENSE)
@@ -31,10 +33,20 @@ Clipline 是基于开源项目 [Tendedero](https://github.com/alejandrobujan/ten
 | 芯片 | Apple Silicon 或 Intel，构建通用双架构应用 |
 | 源码编译 | Apple Swift 5.9+ 和 macOS 14+ SDK，由兼容的 Xcode 或 Command Line Tools 提供 |
 | 额外运行环境 | 不需要安装 Python、Node.js 或 Homebrew |
-| 发布形式 | 源码 ZIP；暂不提供经过公证、可直接安装的 DMG |
-| 已验证 | GitHub macOS 14 环境通过 12 项测试和双架构编译；本地 Apple Silicon 编译、安装通过 |
+| 发布形式 | 源码 ZIP 和本地签名的通用 DMG；未经过 Apple 公证 |
+| 已验证 | GitHub macOS 14 环境通过 15 项测试和双架构编译；本地 Apple Silicon 编译、安装通过 |
 
 Intel 已通过编译，但尚未完成 Intel 实机运行验证；更广泛的 UI 验收仍待完善。
+
+## 使用 DMG 安装
+
+1. 从 [发布页面](https://github.com/soroyue/Clipline/releases/latest) 下载 `Clipline-0.2.0.dmg`。
+2. 更新前先退出正在运行的 Clipline。打开 DMG，将 Clipline 拖到 Applications 文件夹。
+3. 弹出磁盘镜像，再从 Applications 打开应用，在菜单中开启所需记录功能。
+
+运行 DMG 中的应用不需要开发工具。它使用 ad hoc 本地签名，没有 Developer ID 签名或 Apple 公证，首次启动可能被 macOS 阻止；不要关闭系统安全保护。如果你的安全策略不允许此类安装，请使用源码编译方式。源码安装脚本使用 `~/Applications`，已有用户请保留一个安装位置，避免出现两个副本。
+
+自行制作 DMG：执行 `bash scripts/make-dmg.sh`。镜像包含应用、Applications 快捷方式、LICENSE 和 NOTICE。
 
 ## 编译与安装
 
@@ -69,7 +81,7 @@ bash Install-and-Test-on-Mac.command
 ### 方式二：使用 Git 下载
 
 
-需要 macOS 14 或更高版本，以及 Apple Swift 工具链（Xcode 或 Command Line Tools）。构建产物包含 Apple Silicon 和 Intel 架构。当前发布源码，暂不提供经过公证的安装包。
+需要 macOS 14 或更高版本，以及 Apple Swift 工具链（Xcode 或 Command Line Tools）。构建产物包含 Apple Silicon 和 Intel 架构。提供源码和本地签名的 DMG，DMG 尚未经过 Apple 公证。
 
 ```bash
 git clone https://github.com/soroyue/Clipline.git
@@ -98,13 +110,23 @@ bash scripts/build-app.sh release
 - **升级**：下载新版源码后重新执行安装脚本；使用 Git 的用户可在无本地改动的仓库执行 `git pull --ff-only` 后重新安装。旧应用备份在 `build/backups/`，本地历史会保留。
 - **卸载**：先关闭“登录时启动”，退出 Clipline，再将 `~/Applications/Clipline.app` 移至废纸篓。这不会删除历史；只有确定不再需要时才单独清除历史数据。
 
+## 三种显示模式
+
+在菜单“显示模式”中选择**纯图片、纯文字、文字＋图片（左右分组）**。单类型模式采用原版居中晾绳与滚动布局，不使用分组归中动画；双类型模式采用左文字、右图片布局。切换不删除任何历史；记录开关仍独立，可以分别决定“记录什么”和“展示什么”。
+
+## 0.2.0 新增功能
+
+- **浏览历史…**：按“全部／文字／图片”分组，搜索文字全文或图片文件名，复制记录、打开原图或移除单条卡片。图片搜索不包含 OCR 文字识别。
+- **暂停记录／恢复记录**：暂停添加剪贴板和截图卡片，保留已有历史；菜单栏显示暂停图标，状态在重启后仍保留。系统截图仍会保存到已配置目录，暂停并不阻止系统截图。恢复时跳过当前剪贴板，只记录之后的新复制。
+- **交互设置…**：可调整顶部展开等待、普通离开后的总收起时间（含动画）、归中动画和新内容展示时间；修改即时保存。“恢复默认设置”分别恢复为 0.5／1.2／1.4／2.5 秒。浏览后先等待 0.7 秒，归中动画完成后才收起。
+
 ## 使用方法
 
 1. 打开 Clipline，在顶部菜单栏找到应用图标；它没有普通主窗口。
 2. 开启“悬挂复制的文字”或图片复制监听，也可以同时开启；按需单独开启截图接管。
 3. 复制新内容。开启监听前的剪贴板内容不会自动导入。
 4. 鼠标在菜单栏停留约 0.5 秒展开晾绳；左侧查看文字，右侧查看图片。
-5. 悬停文字卡片阅读全文，点击复制，或使用“搜索文字历史…”检索。
+5. 悬停文字卡片阅读全文，点击复制，或使用“浏览历史…”检索。
 
 普通离开后等待约 0.98 秒，再经过 0.22 秒动画收起，总计约 1.2 秒。滚动历史后离开，会先等待约 0.7 秒，再用 1.4 秒缓慢归中，约 2.5 秒后开始收起。阅读预览或操作卡片时保持展开。新内容自动展示另有 2.5 秒停留时间。上述时间均为近似值。
 
@@ -120,7 +142,7 @@ bash scripts/build-app.sh release
 
 ## 验证状态与限制
 
-12 项自动化测试覆盖原文保真、持久化及权限、去重、复制、删除、容量淘汰、过滤、图片捕获和分组滚动。本机 macOS 测试及双架构编译已通过；仓库配置了 GitHub Actions 自动检查。
+15 项自动化测试覆盖原文保真、持久化及权限、去重、复制、删除、容量淘汰、过滤、图片捕获和分组滚动。本机 macOS 测试及双架构编译已通过；仓库配置了 GitHub Actions 自动检查。
 
 视觉效果、多显示器、全屏及手势体验仍需要更广泛的人工验证；测试通过不等于全部 UI 验收通过。Intel 已通过目标架构构建，但未在 Intel 实机验证运行。
 
