@@ -1,0 +1,21 @@
+name: Clipline macOS tests
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift test
+      - run: swift scripts/check-strings.swift
+      - run: bash scripts/build-app.sh debug
+      - run: ditto -c -k --sequesterRsrc --keepParent build/Clipline.app build/Clipline-macOS.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Clipline-macOS
+          path: build/Clipline-macOS.zip

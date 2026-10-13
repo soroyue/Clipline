@@ -1,0 +1,15 @@
+.build/
+build/
+.swiftpm/
+.DS_Store
+*.log
+*.app/
+*.dmg
+*.zip
+.env
+.env.*
+*.pem
+*.key
+LOCAL_CODEX_TASK.md
+LOCAL_TEST_RESULTS.md
+Clipboard-changes.patch

@@ -1,0 +1,217 @@
+import AppKit
+import XCTest
+@testable import Tendedero
+
+final class TextClipboardTests: XCTestCase {
+    @MainActor func testSplitLanesAndIndependentScrolling() async throws {
+        _ = NSApplication.shared
+        let suite = "Clipline-layout-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer {
+            defaults.removePersistentDomain(forName: suite)
+            try? FileManager.default.removeItem(at: folder)
+        }
+        let line = Line(defaults: defaults, textFolder: folder)
+        line.hangText("older")
+        line.hangText("latest")
+        let older = line.items[0], latest = line.items[1]
+        XCTAssertLessThan(line.x(for: older, width: 1200), line.x(for: latest, width: 1200))
+        XCTAssertLessThan(line.x(for: latest, width: 1200), 600)
+        XCTAssertGreaterThan(Layout.groupX(rank: 1, isText: false, width: 1200, scroll: 0),
+                             Layout.groupX(rank: 0, isText: false, width: 1200, scroll: 0))
+        line.scroll(by: 100000, isText: true)
+        XCTAssertEqual(line.textScroll, Layout.spacing)
+        XCTAssertEqual(line.imageScroll, 0)
+        XCTAssertEqual(line.x(for: older, width: 1200), Layout.groupX(rank: 0, isText: true, width: 1200, scroll: 0))
+        line.scroll(by: -100000, isText: true)
+        XCTAssertEqual(line.textScroll, 0)
+        line.scroll(by: 100, isText: true)
+        line.returnToLatest()
+        XCTAssertFalse(line.isBrowsing)
+        let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 2, pixelsHigh: 2,
+                                  bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
+                                  isPlanar: false, colorSpaceName: .deviceRGB,
+                                  bytesPerRow: 0, bitsPerPixel: 0)!
+        for name in ["first.png", "second.png"] {
+            let url = folder.appendingPathComponent(name)
+            try rep.representation(using: .png, properties: [:])!.write(to: url)
+            XCTAssertNotNil(line.hang(url, quietly: true))
+        }
+        line.scroll(by: 80, isText: true)
+        line.scroll(by: 80, isText: false)
+        XCTAssertEqual(line.textScroll, 80)
+        XCTAssertEqual(line.imageScroll, 80)
+        line.scroll(by: -80, isText: false)
+        XCTAssertEqual(line.imageScroll, 0)
+        XCTAssertEqual(line.textScroll, 80)
+    }
+
+    func testFirstParagraphAndUnicodeSummary() {
+        XCTAssertEqual(TextClips.summary("\r\n  城市更新\r\n实施方案\r\n\r\n第二段"), "城市更新 实施方案")
+        XCTAssertEqual(TextClips.summary("👨‍👩‍👧‍👦你好世界", limit: 3), "👨‍👩‍👧‍👦你好…")
+    }
+
+    func testUTF8PersistenceAndPermissions() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let original = "  你好 👋\n\nhttps://example.com\t尾部  "
+        let url = try TextClips.save(original, in: folder)
+        XCTAssertEqual(TextClips.read(url), original)
+        let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+        XCTAssertEqual((attributes[.posixPermissions] as? NSNumber)?.intValue, 0o600)
+    }
+
+    @MainActor
+    private func capture(_ entries: [[NSPasteboard.PasteboardType: String]], enabled: Bool = true) -> [String] {
+        let oldText = ClipboardWatcher.textEnabled
+        let oldImage = ClipboardWatcher.isEnabled
+        defer {
+            ClipboardWatcher.textEnabled = oldText
+            ClipboardWatcher.isEnabled = oldImage
+        }
+        ClipboardWatcher.textEnabled = enabled
+        ClipboardWatcher.isEnabled = false
+        let pb = NSPasteboard(name: .init("Clipline-test-\(UUID().uuidString)"))
+        defer { pb.releaseGlobally() }
+        var result: [String] = []
+        let watcher = ClipboardWatcher(pasteboard: pb, onImage: { _ in XCTFail("Unexpected image") },
+                                       onText: { result.append($0) })
+        for values in entries {
+            let item = NSPasteboardItem()
+            for (key, value) in values { item.setString(value, forType: key) }
+            pb.clearContents()
+            pb.writeObjects([item])
+            watcher.check()
+            watcher.check() // An unchanged pasteboard must be read only once.
+        }
+        return result
+    }
+
+    @MainActor func testCapturesExactTextOnlyOnce() async {
+        XCTAssertEqual(capture([[.string: "  你好\n原文  "]]), ["  你好\n原文  "])
+    }
+
+    @MainActor func testDisabledAndEmptyClipboardAreIgnored() async {
+        XCTAssertTrue(capture([[.string: "off"]], enabled: false).isEmpty)
+        XCTAssertTrue(capture([[.string: " \n\t"]]).isEmpty)
+    }
+
+    @MainActor func testSensitiveAndSelfCopiesAreIgnored() async {
+        for name in ["org.nspasteboard.ConcealedType", "org.nspasteboard.TransientType",
+                     "org.nspasteboard.AutoGeneratedType", TextClips.ownType.rawValue] {
+            XCTAssertTrue(capture([[.string: "secret", .init(name): "1"]]).isEmpty)
+        }
+    }
+
+    @MainActor func testFileCopyAndOversizeAreIgnored() async {
+        XCTAssertTrue(capture([[.string: "file.txt", .fileURL: "file:///tmp/file.txt"]]).isEmpty)
+        XCTAssertTrue(capture([[.string: String(repeating: "x", count: TextClips.maxBytes + 1)]]).isEmpty)
+    }
+
+    @MainActor func testRichTextKeepsPlainText() async {
+        XCTAssertEqual(capture([[.string: "中文正文", .html: "<p>中文正文</p>"]]), ["中文正文"])
+    }
+
+    @MainActor func testCopiedImagesStillWorkWithTextEnabled() async {
+        let oldText = ClipboardWatcher.textEnabled
+        let oldImage = ClipboardWatcher.isEnabled
+        defer {
+            ClipboardWatcher.textEnabled = oldText
+            ClipboardWatcher.isEnabled = oldImage
+        }
+        ClipboardWatcher.textEnabled = true
+        ClipboardWatcher.isEnabled = true
+        let pb = NSPasteboard(name: .init("Clipline-test-\(UUID().uuidString)"))
+        defer { pb.releaseGlobally() }
+        let done = expectation(description: "Image capture")
+        let watcher = ClipboardWatcher(pasteboard: pb, onImage: { url in
+            XCTAssertEqual(url.pathExtension, "png")
+            try? FileManager.default.removeItem(at: url)
+            done.fulfill()
+        }, onText: { _ in XCTFail("Image must not become text") })
+        watcher.start()
+        defer { watcher.stop() }
+        let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 2, pixelsHigh: 2,
+                                  bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
+                                  isPlanar: false, colorSpaceName: .deviceRGB,
+                                  bytesPerRow: 0, bitsPerPixel: 0)!
+        let entry = NSPasteboardItem()
+        entry.setData(rep.representation(using: .png, properties: [:])!, forType: .png)
+        pb.clearContents()
+        pb.writeObjects([entry])
+        watcher.check()
+        await fulfillment(of: [done], timeout: 3)
+    }
+
+    @MainActor func testStartSkipsOldClipboard() async {
+        let old = ClipboardWatcher.textEnabled
+        defer { ClipboardWatcher.textEnabled = old }
+        ClipboardWatcher.textEnabled = true
+        let pb = NSPasteboard(name: .init("Clipline-test-\(UUID().uuidString)"))
+        defer { pb.releaseGlobally() }
+        pb.setString("old", forType: .string)
+        var result: [String] = []
+        let watcher = ClipboardWatcher(pasteboard: pb, onImage: { _ in }, onText: { result.append($0) })
+        watcher.start()
+        defer { watcher.stop() }
+        watcher.check()
+        XCTAssertTrue(result.isEmpty)
+        pb.clearContents()
+        pb.setString("new", forType: .string)
+        watcher.check()
+        XCTAssertEqual(result, ["new"])
+    }
+
+    @MainActor func testHistoryDeduplicationRestoreCopyAndDelete() async throws {
+        _ = NSApplication.shared
+        let suite = "Clipline-tests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer {
+            defaults.removePersistentDomain(forName: suite)
+            try? FileManager.default.removeItem(at: folder)
+        }
+        let line = Line(defaults: defaults, textFolder: folder)
+        line.hangText("first\n第二行")
+        line.hangText("second")
+        let firstID = line.items[0].id
+        line.hangText("first\n第二行")
+        XCTAssertEqual(line.liveCount, 2)
+        XCTAssertEqual(line.items.last?.id, firstID)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path).count, 2)
+
+        let restored = Line(defaults: defaults, textFolder: folder)
+        XCTAssertEqual(restored.items.compactMap(\.text), ["second", "first\n第二行"])
+        let pb = NSPasteboard(name: .init("Clipline-test-\(UUID().uuidString)"))
+        defer { pb.releaseGlobally() }
+        let item = restored.items.last!
+        restored.copy(item.id, pasteboard: pb)
+        XCTAssertEqual(pb.string(forType: .string), "first\n第二行")
+        XCTAssertNotNil(pb.string(forType: TextClips.ownType))
+        XCTAssertNil(pb.string(forType: .fileURL))
+        restored.eraseText(item.id)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: item.url.path))
+        XCTAssertEqual(Line(defaults: defaults, textFolder: folder).liveCount, 1)
+    }
+
+    @MainActor func testCapacityDeletesOldestText() async throws {
+        _ = NSApplication.shared
+        let suite = "Clipline-tests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer {
+            defaults.removePersistentDomain(forName: suite)
+            try? FileManager.default.removeItem(at: folder)
+        }
+        let line = Line(defaults: defaults, textFolder: folder)
+        line.maxItems = 2
+        line.hangText("one")
+        let oldest = line.items[0].url
+        line.hangText("two")
+        line.hangText("three")
+        XCTAssertEqual(line.liveCount, 2)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: oldest.path))
+        XCTAssertEqual(Line(defaults: defaults, textFolder: folder).items.compactMap(\.text), ["two", "three"])
+    }
+}
